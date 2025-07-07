@@ -1,42 +1,43 @@
-# Makefile – compilation du noyau minimal x86_64
-# Les outils utilisent le préfixe $(CROSS)
-CROSS  ?= x86_64-elf-
-CC     := $(CROSS)gcc      # compilateur C
-AS     := $(CROSS)gcc      # assembleur
-LD     := $(CROSS)ld       # éditeur de liens
-OBJCOPY:= $(CROSS)objcopy  # conversion de format
+ROSS  ?= x86_64-elf-
+CC     := $(CROSS)gcc
+AS     := $(CROSS)gcc
+LD     := $(CROSS)ld
+OBJCOPY:= $(CROSS)objcopy
 CFLAGS := -ffreestanding -O2 -Wall -Wextra -std=gnu99 -m64
 LDFLAGS:= -T linker.ld -nostdlib -z max-page-size=0x1000
 
-OBJS = boot.o kernel.o interrupts.o  # fichiers objets
+# C sources
+CSRC := $(wildcard src/*.c) $(wildcard drivers/*.c)
+ASM  := boot.s src/interrupts.s
+OBJS := $(CSRC:.c=.o) $(ASM:.s=.o) rust_modules/target/release/libnovarust.a
 
 all: kernel.iso
 
-boot.o: boot.s                        # amorce assembleur
-	$(AS) $(CFLAGS) -c $< -o $@
+rust_modules/target/release/libnovarust.a:
+			$(MAKE) -C rust_modules release
 
-kernel.o: kernel.c                    # noyau en C
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.s
+		$(AS) $(CFLAGS) -c $< -o $@
 
-interrupts.o: interrupts.s            # stubs d'interruptions
-	$(AS) $(CFLAGS) -c $< -o $@
+%.o: %.c
+		$(CC) $(CFLAGS) -c $< -o $@
 
-kernel.bin: $(OBJS) linker.ld         # édition des liens
-	$(LD) $(LDFLAGS) $(OBJS) -o kernel.elf
-	$(OBJCOPY) -O elf64-x86-64 kernel.elf kernel.bin
+kernel.bin: $(OBJS) linker.ld
+		$(LD) $(LDFLAGS) $(filter %.o,$^) rust_modules/target/release/libnovarust.a -o kernel.elf
+		$(OBJCOPY) -O elf64-x86-64 kernel.elf kernel.bin
 
-iso: kernel.bin grub.cfg              # création de l'image ISO
-	mkdir -p iso/boot/grub
-	cp kernel.bin iso/boot/kernel.bin
-	cp grub.cfg iso/boot/grub/grub.cfg
-	grub-mkrescue -o kernel.iso iso
+iso: kernel.bin grub.cfg
+		mkdir -p iso/boot/grub
+		cp kernel.bin iso/boot/kernel.bin
+		cp grub.cfg iso/boot/grub/grub.cfg
+		grub-mkrescue -o kernel.iso iso >/dev/null
 
-kernel.iso: iso                       # dépend de la cible précédente
+kernel.iso: iso
 
-clean:                                # nettoyage
-	rm -rf iso kernel.elf kernel.bin kernel.iso $(OBJS)
+clean:
+		rm -rf iso kernel.elf kernel.bin kernel.iso $(CSRC:.c=.o) $(ASM:.s=.o) rust_modules/target
 
-run: kernel.iso                       # exécution sous QEMU
-	qemu-system-x86_64 -cdrom kernel.iso
+run: kernel.iso
+		qemu-system-x86_64 -serial stdio -cdrom kernel.iso
 
 .PHONY: all iso clean run

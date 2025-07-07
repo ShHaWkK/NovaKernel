@@ -1,5 +1,6 @@
 /* interrupts.s - stubs d'interruptions et chargeurs de tables */
 .global isr0
+.global irq0
 .global irq1
 .global load_idt
 .global load_gdt
@@ -48,5 +49,10 @@ isr0:                                   # division par zéro
 
 irq1:                                   # interruption clavier
     mov $irq1_handler, %rax
+    sub $16, %rsp
+    jmp .isr_common
+
+irq0:                                   # timer interrupt
+    mov $irq0_handler, %rax
     sub $16, %rsp
     jmp .isr_common
