@@ -22,6 +22,8 @@ static struct idt_ptr idtr;
 extern void isr0();
 extern void irq0();
 extern void irq1();
+extern void keyboard_isr(void);
+extern void timer_tick(void);
 extern void load_idt(struct idt_ptr*);
 extern void load_gdt(struct idt_ptr*);
 
@@ -45,12 +47,14 @@ void isr0_handler(void* frame) {
 __attribute__((interrupt))
 void irq0_handler(void* frame) {
     (void)frame;
+    timer_tick();
     __asm__("outb %%al, $0x20" :: "a"(0x20));
 }
 
 __attribute__((interrupt))
 void irq1_handler(void* frame) {
     (void)frame;
+    keyboard_isr();
     __asm__("outb %%al, $0x20" :: "a"(0x20));
 }
 
