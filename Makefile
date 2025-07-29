@@ -1,20 +1,22 @@
-ROSS  ?= x86_64-elf-
+CROSS  ?= x86_64-elf-
 CC     := $(CROSS)gcc
 AS     := $(CROSS)gcc
 LD     := $(CROSS)ld
 OBJCOPY:= $(CROSS)objcopy
-CFLAGS := -ffreestanding -O2 -Wall -Wextra -std=gnu99 -m64
+# Avoid SSE usage in interrupt routines
+CFLAGS := -ffreestanding -O2 -Wall -Wextra -std=gnu99 -m64 -mgeneral-regs-only
 LDFLAGS:= -T linker.ld -nostdlib -z max-page-size=0x1000
 
 # C sources
 CSRC := $(wildcard src/*.c) $(wildcard drivers/*.c)
-ASM  := boot.s src/interrupts.s
-OBJS := $(CSRC:.c=.o) $(ASM:.s=.o) rust_modules/target/release/libnovarust.a
+ASM  := boot.s interrupts.s
+RUST_LIB := rust_modules/target/x86_64-unknown-linux-gnu/release/libnovarust.a
+OBJS := $(CSRC:.c=.o) $(ASM:.s=.o) $(RUST_LIB)
 
 all: kernel.iso
 
-rust_modules/target/release/libnovarust.a:
-			$(MAKE) -C rust_modules release
+$(RUST_LIB):
+	$(MAKE) -C rust_modules release
 
 %.o: %.s
 		$(AS) $(CFLAGS) -c $< -o $@
@@ -23,8 +25,8 @@ rust_modules/target/release/libnovarust.a:
 		$(CC) $(CFLAGS) -c $< -o $@
 
 kernel.bin: $(OBJS) linker.ld
-		$(LD) $(LDFLAGS) $(filter %.o,$^) rust_modules/target/release/libnovarust.a -o kernel.elf
-		$(OBJCOPY) -O elf64-x86-64 kernel.elf kernel.bin
+	$(LD) $(LDFLAGS) $(filter %.o,$^) $(RUST_LIB) -o kernel.elf
+	$(OBJCOPY) -O elf64-x86-64 kernel.elf kernel.bin
 
 iso: kernel.bin grub.cfg
 		mkdir -p iso/boot/grub

@@ -4,9 +4,19 @@ A minimal 64-bit kernel for x86_64 written in C and assembly. It boots with GRUB
 
 Ce projet contient des commentaires en français expliquant chaque fichier et fonction principale.
 
+## Prerequisites (Linux)
+
+Install the following packages on a Debian based system:
+
+```sh
+sudo apt-get install build-essential grub-pc-bin xorriso qemu-system-x86 rustc cargo
+```
+
+`x86_64-elf-gcc` is optional. If it is not installed, you can build using the host toolchain by passing `CROSS=` to `make`.
+
 ## Building
 
-A cross compiler `x86_64-elf-gcc` and `grub-mkrescue` are required. Build everything and produce a bootable ISO with:
+Build everything and produce a bootable ISO with:
 
 ```sh
 make
@@ -21,6 +31,23 @@ make run
 ```
 
 This will start QEMU and boot the generated `kernel.iso` image.
+
+## Using Docker
+
+If you are on Windows or prefer an isolated environment, you can build and run
+the kernel inside a Docker container. First build the image:
+
+```sh
+docker build -t novakernel .
+```
+
+Then run QEMU from the container:
+
+```sh
+docker run --rm -it -v $(pwd):/src -w /src novakernel make run
+```
+
+On Windows use `%cd%` instead of `$(pwd)`.
 
 ## Structure des fichiers
 

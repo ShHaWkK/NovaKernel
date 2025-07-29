@@ -83,17 +83,17 @@ gdt64_end:
 /* Tables de pages pour mapper identiquement les premiers 2 MiB */
 .align 4096
 pml4_table:
-    .quad pdpt_table | 0x3
+    .quad pdpt_table + 0x3
     .fill 511,8,0
 
 .align 4096
 pdpt_table:
-    .quad pd_table | 0x3
+    .quad pd_table + 0x3
     .fill 511,8,0
 
 .align 4096
 pd_table:
-    .quad 0x00000000 | 0x83  /* page de 2 MiB */
+    .quad 0x00000000 + 0x83  /* page de 2 MiB */
     .fill 511,8,0
 
 .code64
