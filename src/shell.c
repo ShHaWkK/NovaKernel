@@ -13,6 +13,11 @@ static void print_char(char c) {
     syscall_handler(SYSCALL_WRITE, (long)buf, 0, 0);
 }
 
+static void print_char(char c) {
+    char buf[2] = { c, 0 };
+    syscall_handler(SYSCALL_WRITE, (long)buf, 0, 0);
+}
+
 static void print(const char* s) {
     syscall_handler(SYSCALL_WRITE, (long)s, 0, 0);
 }
@@ -82,6 +87,32 @@ static void dispatch(const char* line) {
 }
 
 
+static int str_eq(const char* a, const char* b) {
+    while (*a && *b) {
+        if (*a != *b) return 0;
+        a++; b++;
+    }
+    return *a == *b;
+}
+
+static int str_starts(const char* s, const char* p) {
+    while (*p) {
+        if (*s++ != *p++) return 0;
+    }
+    return 1;
+}
+
+static void handle_cmd(const char* cmd) {
+    if (str_eq(cmd, "help")) {
+        print("Commands: help, echo\n");
+    } else if (str_starts(cmd, "echo ")) {
+        print(cmd + 5);
+        print("\n");
+    } else {
+        print("Unknown command\n");
+    }
+}
+
 void shell(void) {
     char buf[64];
     int pos = 0;
@@ -102,4 +133,3 @@ void shell(void) {
         }
     }
 }
-

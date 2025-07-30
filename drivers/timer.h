@@ -7,4 +7,3 @@ void timer_tick(void);
 unsigned long timer_ticks(void);
 
 #endif
-
