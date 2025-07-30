@@ -1,0 +1,7 @@
+*.o
+kernel.elf
+kernel.bin
+kernel.iso
+iso/
+rust_modules/target/
+rust_modules/Cargo.lock
